@@ -1,6 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError
+from bson import ObjectId
+import uuid
+import hashlib
 import os
 
 app = Flask(__name__)
@@ -43,6 +46,26 @@ def index():
             message = f"Something went wrong: {str(e)}"
 
     return render_template('index.html', message=message, is_success=is_success)
+
+@app.route('/submittodoitem', methods=['POST'])
+def submittodoitem():
+    try:
+        item = {
+            "itemName": request.form.get('itemName'),
+            "itemDescription": request.form.get('itemDescription'),
+            "itemId": request.form.get('itemId'),
+            "itemUuid": request.form.get('itemUuid', str(uuid.uuid4())),
+            "itemHash": request.form.get('itemHash'),
+            "created_at": datetime.utcnow()
+        }
+        
+        result = collection.insert_one(item)
+        return jsonify({
+            "status": "success",
+            "inserted_id": str(result.inserted_id)
+        }), 201
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @app.route('/success')
